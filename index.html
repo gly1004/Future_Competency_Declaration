@@ -815,25 +815,53 @@
 </div>
 
 <script>
-// ── PDF 저장 (모바일 포함) ──
+// ── PDF / 이미지 저장 ──
 function savePDF() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) { window.print(); return; }
+    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isDesktop) { window.print(); return; }
+
+    if (typeof html2canvas === 'undefined') {
+        alert('라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+    }
 
     const btn = document.querySelector('.btn-print');
-    const orig = btn.textContent;
-    btn.textContent = '⏳ 생성 중...';
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ 생성 중...';
     btn.disabled = true;
 
     const card = document.querySelector('.result-card');
-    html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const pw = pdf.internal.pageSize.getWidth();
-        const ph = (canvas.height * pw) / canvas.width;
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pw, ph);
-        pdf.save('미래역량선언문.pdf');
-        btn.textContent = orig;
+    html2canvas(card, {
+        scale: 2, useCORS: true, allowTaint: true,
+        backgroundColor: '#ffffff', logging: false
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        if (typeof window.jspdf !== 'undefined') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pw = pdf.internal.pageSize.getWidth();
+            const ph = Math.min((canvas.height * pw) / canvas.width, 297);
+            pdf.addImage(imgData, 'PNG', 0, 0, pw, ph);
+            if (isIOS) {
+                // iOS Safari: 새 탭에서 PDF 열기 (길게 눌러 저장)
+                pdf.output('dataurlnewwindow');
+            } else {
+                pdf.save('미래역량선언문.pdf');
+            }
+        } else {
+            // jsPDF 로딩 실패 시: 이미지로 새 탭에서 열기
+            const win = window.open('', '_blank');
+            win.document.write('<html><body style="margin:0"><img src="' + imgData + '" style="width:100%;display:block"></body></html>');
+            win.document.close();
+        }
+
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }).catch(() => {
+        alert('저장 중 오류가 발생했습니다. 스크린샷을 이용해 주세요.');
+        btn.innerHTML = orig;
         btn.disabled = false;
     });
 }
