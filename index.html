@@ -185,12 +185,9 @@
         .slot-explain-item:nth-child(1) .slot-explain-num { color: #2ec4b6; }
         .slot-explain-item:nth-child(3) .slot-explain-num { color: #7ab4d4; }
         .slot-explain-item:nth-child(5) .slot-explain-num { color: #64d8cb; }
-        .slot-explain-quote {
-            font-size: 0.64rem; color: rgba(255,255,255,0.45); font-style: italic;
-            line-height: 1.5; margin-bottom: 4px;
-        }
-        .slot-explain-desc {
-            font-size: 0.65rem; color: rgba(255,255,255,0.3); line-height: 1.4;
+        .slot-explain-question {
+            font-size: 0.7rem; color: rgba(255,255,255,0.72); line-height: 1.55;
+            margin-top: 4px;
         }
         .slot-explain-arrow {
             display: flex; align-items: center; padding: 0 4px;
@@ -220,7 +217,7 @@
         .sel-slot.f3 .sel-name { color: #64d8cb; }
 
         .sel-hint {
-            font-size: 0.62rem; color: rgba(255,255,255,0.28); margin-top: 5px; line-height: 1.5;
+            font-size: 0.62rem; color: rgba(255,255,255,0.68); margin-top: 5px; line-height: 1.5;
         }
 
         .sel-count-info { text-align: center; font-size: 0.85rem; color: #8aacbf; margin-bottom: 12px; }
@@ -535,6 +532,8 @@
             .rc-watermark { display: block !important; }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -626,20 +625,17 @@
                 <div class="slot-explain">
                     <div class="slot-explain-item">
                         <div class="slot-explain-num">① 관점</div>
-                        <div class="slot-explain-quote">"세상을 [키워드]로 바라보며…"</div>
-                        <div class="slot-explain-desc">아이가 세상을 어떤<br>눈으로 바라보는가?<br>세상을 대하는 태도</div>
+                        <div class="slot-explain-question">아이가 세상을 어떤 눈으로 바라보는가?</div>
                     </div>
                     <div class="slot-explain-arrow">→</div>
                     <div class="slot-explain-item">
                         <div class="slot-explain-num">② 행동</div>
-                        <div class="slot-explain-quote">"언제나 [키워드]하여…"</div>
-                        <div class="slot-explain-desc">문제를 만났을 때<br>어떻게 해결하는가?<br>실천하는 방식</div>
+                        <div class="slot-explain-question">문제를 만났을 때 어떻게 해결하는가?</div>
                     </div>
                     <div class="slot-explain-arrow">→</div>
                     <div class="slot-explain-item">
                         <div class="slot-explain-num">③ 정체성</div>
-                        <div class="slot-explain-quote">"[키워드]한 사람이 될 것…"</div>
-                        <div class="slot-explain-desc">최종적으로 되고<br>싶은 모습은?<br>아이의 미래상</div>
+                        <div class="slot-explain-question">최종적으로 되고 싶은 모습은?</div>
                     </div>
                 </div>
 
@@ -808,7 +804,7 @@
 
         <div class="result-actions">
             <button class="btn-restart" onclick="restart()">다시 만들기</button>
-            <button class="btn-print" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+            <button class="btn-print" onclick="savePDF()">📄 PDF 저장 / 인쇄</button>
         </div>
     </div>
 
@@ -819,6 +815,29 @@
 </div>
 
 <script>
+// ── PDF 저장 (모바일 포함) ──
+function savePDF() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) { window.print(); return; }
+
+    const btn = document.querySelector('.btn-print');
+    const orig = btn.textContent;
+    btn.textContent = '⏳ 생성 중...';
+    btn.disabled = true;
+
+    const card = document.querySelector('.result-card');
+    html2canvas(card, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = (canvas.height * pw) / canvas.width;
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pw, ph);
+        pdf.save('미래역량선언문.pdf');
+        btn.textContent = orig;
+        btn.disabled = false;
+    });
+}
+
 // ── 데이터 ──
 const CATEGORIES = [
     {
