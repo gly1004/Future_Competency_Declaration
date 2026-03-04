@@ -801,6 +801,8 @@ function savePDF() {
     btn.disabled = true;
 
     const card = document.querySelector('.result-card');
+    const cardW = card.scrollWidth;
+    const cardH = card.scrollHeight;
     html2canvas(card, {
         scale: 4,
         useCORS: true,
@@ -808,7 +810,10 @@ function savePDF() {
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 0,
-        windowWidth: 600,
+        width: cardW,
+        height: cardH,
+        windowWidth: cardW,
+        windowHeight: cardH,
         onclone: (doc) => {
             doc.querySelectorAll('*').forEach(el => {
                 el.style.backdropFilter = 'none';
