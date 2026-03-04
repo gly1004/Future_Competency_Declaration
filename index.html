@@ -314,33 +314,11 @@
             background: linear-gradient(160deg, #fdfffe 0%, #ffffff 55%, #fafffe 100%);
             box-shadow: inset 0 0 0 6px rgba(46,196,182,0.05);
         }
-        /* 내부 금색 이중선 */
-        .rc-inner::before {
-            content: ''; position: absolute; inset: 6px;
-            border: 1px solid rgba(200,162,78,0.2);
-            border-radius: 12px; pointer-events: none;
-        }
-
         .rc-corner { position: absolute; width: 32px; height: 32px; }
         .rc-corner.tl { top: -2px; left: -2px; border-top: 3px solid #c8a24e; border-left: 3px solid #c8a24e; border-radius: 7px 0 0 0; }
         .rc-corner.tr { top: -2px; right: -2px; border-top: 3px solid #c8a24e; border-right: 3px solid #c8a24e; border-radius: 0 7px 0 0; }
         .rc-corner.bl { bottom: -2px; left: -2px; border-bottom: 3px solid #c8a24e; border-left: 3px solid #c8a24e; border-radius: 0 0 0 7px; }
         .rc-corner.br { bottom: -2px; right: -2px; border-bottom: 3px solid #c8a24e; border-right: 3px solid #c8a24e; border-radius: 0 0 7px 0; }
-
-        /* 상단 엠블럼 */
-        .rc-emblem {
-            width: 74px; height: 74px; border-radius: 50%;
-            background: linear-gradient(145deg, #0a5550, #0f9e96 55%, #2ec4b6);
-            margin: 0 auto 18px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2.1rem;
-            box-shadow: 0 0 0 4px rgba(200,162,78,0.38), 0 0 0 9px rgba(200,162,78,0.1), 0 10px 32px rgba(15,106,100,0.45);
-            position: relative;
-        }
-        .rc-emblem::before {
-            content: ''; position: absolute; inset: 5px;
-            border-radius: 50%; border: 1px solid rgba(255,255,255,0.35);
-        }
 
         .rc-header { text-align: center; margin-bottom: 26px; }
         .rc-title {
@@ -726,7 +704,6 @@
                 <div class="rc-corner br"></div>
 
                 <div class="rc-header">
-                    <div class="rc-emblem">🌿</div>
                     <div class="rc-title">미래역량 선언문</div>
                     <div class="rc-title-en">My Future Competency Declaration</div>
                     <div class="rc-ornament">
@@ -816,9 +793,7 @@
 <script>
 // ── 이미지 저장 ──
 function savePDF() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) { window.print(); return; }
-    if (typeof html2canvas === 'undefined') { window.print(); return; }
+    if (typeof html2canvas === 'undefined') { alert('html2canvas를 불러오지 못했습니다.'); return; }
 
     const btn = document.querySelector('.btn-print');
     const orig = btn.innerHTML;
@@ -835,49 +810,48 @@ function savePDF() {
         imageTimeout: 0,
         windowWidth: 600,
         onclone: (doc) => {
-            // html2canvas가 처리 못하는 CSS 제거
             doc.querySelectorAll('*').forEach(el => {
                 el.style.backdropFilter = 'none';
                 el.style.webkitBackdropFilter = 'none';
                 el.style.animation = 'none';
                 el.style.transition = 'none';
             });
-            // 카드 배경 명시적 지정
             const rc = doc.querySelector('.result-card');
             if (rc) rc.style.background = '#e8faf8';
             const ri = doc.querySelector('.rc-inner');
             if (ri) ri.style.background = '#ffffff';
         }
     }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png', 1.0);
-
-        // 페이지 안에 이미지 직접 표시 (팝업 불필요 — 모든 모바일 브라우저 작동)
-        let preview = document.getElementById('imgPreview');
-        if (!preview) {
-            preview = document.createElement('div');
-            preview.id = 'imgPreview';
-            preview.style.cssText = 'margin-top:16px;padding:14px;background:rgba(46,196,182,0.08);border:1px solid rgba(46,196,182,0.3);border-radius:14px;text-align:center';
-            document.querySelector('.result-actions').insertAdjacentElement('afterend', preview);
-        }
-        preview.innerHTML =
-            '<p style="color:#64d8cb;font-size:14px;font-weight:bold;margin:0 0 4px">📥 이미지 저장 방법</p>' +
-            '<p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0 0 10px">아래 이미지를 <b style="color:#fff">길게 눌러</b> 저장하세요</p>' +
-            '<img src="' + imgData + '" style="width:100%;border-radius:10px;display:block">';
-
-        // Android는 직접 다운로드도 병행 시도
+        const fileName = '미래역량선언문.png';
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (!isIOS) {
-            const a = document.createElement('a');
-            a.href = imgData;
-            a.download = '미래역량선언문.png';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
 
-        btn.innerHTML = orig;
-        btn.disabled = false;
-        preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (isIOS && navigator.canShare) {
+            // iOS: Web Share API로 파일 공유 (저장 가능)
+            canvas.toBlob(blob => {
+                const file = new File([blob], fileName, { type: 'image/png' });
+                navigator.share({ files: [file], title: '미래역량 선언문' })
+                    .catch(() => {
+                        // 공유 취소 시 새 탭으로 열기
+                        window.open(canvas.toDataURL('image/png'), '_blank');
+                    });
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }, 'image/png');
+        } else {
+            // Android / Desktop: 직접 다운로드
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }, 'image/png');
+        }
     }).catch(err => {
         alert('캡처 오류: ' + err.message);
         btn.innerHTML = orig;
