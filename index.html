@@ -825,11 +825,31 @@ function savePDF() {
     btn.innerHTML = '⏳ 생성 중...';
     btn.disabled = true;
 
-    html2canvas(document.querySelector('.result-card'), {
-        scale: 2, useCORS: true, allowTaint: true,
-        backgroundColor: '#ffffff', logging: false
+    const card = document.querySelector('.result-card');
+    html2canvas(card, {
+        scale: 4,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 0,
+        windowWidth: 600,
+        onclone: (doc) => {
+            // html2canvas가 처리 못하는 CSS 제거
+            doc.querySelectorAll('*').forEach(el => {
+                el.style.backdropFilter = 'none';
+                el.style.webkitBackdropFilter = 'none';
+                el.style.animation = 'none';
+                el.style.transition = 'none';
+            });
+            // 카드 배경 명시적 지정
+            const rc = doc.querySelector('.result-card');
+            if (rc) rc.style.background = '#e8faf8';
+            const ri = doc.querySelector('.rc-inner');
+            if (ri) ri.style.background = '#ffffff';
+        }
     }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/png', 1.0);
 
         // 페이지 안에 이미지 직접 표시 (팝업 불필요 — 모든 모바일 브라우저 작동)
         let preview = document.getElementById('imgPreview');
