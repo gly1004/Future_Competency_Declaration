@@ -814,7 +814,7 @@
 </div>
 
 <script>
-// ── 이미지 다운로드 ──
+// ── 이미지 저장 ──
 function savePDF() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (!isMobile) { window.print(); return; }
@@ -829,41 +829,37 @@ function savePDF() {
         scale: 2, useCORS: true, allowTaint: true,
         backgroundColor: '#ffffff', logging: false
     }).then(canvas => {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const imgData = canvas.toDataURL('image/png');
 
-        if (isIOS) {
-            // iOS: 새 탭에서 이미지 열기 → 길게 눌러 저장
-            const win = window.open('', '_blank');
-            if (win) {
-                win.document.write(
-                    '<html><head><title>미래역량 선언문</title>' +
-                    '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-                    '<body style="margin:0;background:#111;padding:12px;text-align:center">' +
-                    '<p style="color:#fff;font-size:15px;margin-bottom:10px">📥 이미지를 <b>길게 눌러</b> 저장하세요</p>' +
-                    '<img src="' + imgData + '" style="width:100%;border-radius:8px">' +
-                    '</body></html>'
-                );
-                win.document.close();
-            }
-        } else {
-            // Android: 직접 파일 다운로드
-            canvas.toBlob(blob => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = '미래역량선언문.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 3000);
-            }, 'image/png');
+        // 페이지 안에 이미지 직접 표시 (팝업 불필요 — 모든 모바일 브라우저 작동)
+        let preview = document.getElementById('imgPreview');
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.id = 'imgPreview';
+            preview.style.cssText = 'margin-top:16px;padding:14px;background:rgba(46,196,182,0.08);border:1px solid rgba(46,196,182,0.3);border-radius:14px;text-align:center';
+            document.querySelector('.result-actions').insertAdjacentElement('afterend', preview);
+        }
+        preview.innerHTML =
+            '<p style="color:#64d8cb;font-size:14px;font-weight:bold;margin:0 0 4px">📥 이미지 저장 방법</p>' +
+            '<p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0 0 10px">아래 이미지를 <b style="color:#fff">길게 눌러</b> 저장하세요</p>' +
+            '<img src="' + imgData + '" style="width:100%;border-radius:10px;display:block">';
+
+        // Android는 직접 다운로드도 병행 시도
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (!isIOS) {
+            const a = document.createElement('a');
+            a.href = imgData;
+            a.download = '미래역량선언문.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         btn.innerHTML = orig;
         btn.disabled = false;
-    }).catch(() => {
-        window.print();
+        preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }).catch(err => {
+        alert('캡처 오류: ' + err.message);
         btn.innerHTML = orig;
         btn.disabled = false;
     });
